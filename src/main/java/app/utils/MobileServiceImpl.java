@@ -65,7 +65,7 @@ public class MobileServiceImpl implements MobileService {
                         picture, Collections.singleton(role), Collections.emptyList(), Collections.emptyList()));
                 UserDetails userDetails = userDetailsService.loadUserByUsername(person.getUsername());
                 String token = jwtUtil.generateToken(userDetails);
-                String ownerUrl = ServletUriComponentsBuilder.fromCurrentContextPath().path("/mobile/users/").path(person.getUsername()).path("/dp").toUriString();
+                String ownerUrl = buildUserDpUrl(person);
                 return ResponseEntity.ok(new RegisteredUser(person.getUsername(), person.getFirstName(),
                         person.getLastName(), person.geteMail(), token, ownerUrl));
             } catch (Exception e) {
@@ -85,7 +85,7 @@ public class MobileServiceImpl implements MobileService {
         Person person = personRepository.findByUsername(loginRequest.getUsername()).get();
         UserDetails userDetails = userDetailsService.loadUserByUsername(loginRequest.getUsername());
         String token = jwtUtil.generateToken(userDetails);
-        String ownerUrl = ServletUriComponentsBuilder.fromCurrentContextPath().path("/mobile/users/").path(person.getUsername()).path("/dp").toUriString();
+        String ownerUrl = buildUserDpUrl(person);
         return ResponseEntity.ok(new RegisteredUser(person.getUsername(), person.getFirstName(),
                 person.getLastName(), person.geteMail(), token, ownerUrl));
     }
@@ -96,17 +96,11 @@ public class MobileServiceImpl implements MobileService {
         List<WarehouseResponse> warehouses = new ArrayList<>();
         Iterable<Warehouse> temp = mine? person.getWarehouses() : warehouseRepository.findAll();
         temp.forEach(w -> {
-            String warehouseUrl = ServletUriComponentsBuilder.fromCurrentContextPath()
-                    .path("/mobile")
-                    .path("/inventory")
-                    .path("/warehouses")
-                    .path("/" + w.getName())
-                    .path("/picture").toUriString();
+            String warehouseUrl = buildWarehousePictureUrl(w);
             PersonResponse owner = null;
             String ownerUrl = null;
             if (w.getOwner() != null) {
-                ownerUrl = ServletUriComponentsBuilder.fromCurrentContextPath()
-                        .path("/users/").path(w.getOwner().getUsername()).path("/dp").toUriString();
+                ownerUrl = buildUserDpUrl(w.getOwner());
                 owner = new PersonResponse(w.getOwner().getUsername(), w.getOwner().getFirstName(), w.getOwner().getLastName(),
                         w.getOwner().geteMail(), ownerUrl);
             }
@@ -121,8 +115,8 @@ public class MobileServiceImpl implements MobileService {
             Warehouse warehouse = warehouseRepository.findByName(warehouseName).orElseThrow(() ->
                     new Exception("Warehouse doesn't exist"));
             Person p = warehouse.getOwner();
-            String warehouseUrl = ServletUriComponentsBuilder.fromCurrentRequest().path("/picture").toUriString();
-            String ownerUrl = ServletUriComponentsBuilder.fromCurrentContextPath().path("/users/").path(p.getUsername()).path("/dp").toUriString();
+            String warehouseUrl = buildWarehousePictureUrl(warehouse);
+            String ownerUrl = buildUserDpUrl(p);
             return new WarehouseResponse(warehouse.getName(), warehouse.getAddress(), warehouse.getUuid(), warehouseUrl,
                     new PersonResponse(p.getUsername(), p.getFirstName(),p.getLastName(), p.geteMail(), ownerUrl));
         } catch (Exception e) {
@@ -145,7 +139,7 @@ public class MobileServiceImpl implements MobileService {
                     .filter(item -> item.getOwner().getUsername().equals(person.getUsername()))
                     .collect(Collectors.toList());
             filtered.forEach(item -> {
-                String itemUrl = ServletUriComponentsBuilder.fromCurrentRequest().path("/" + item.getName()).path("/picture").toUriString();
+                String itemUrl = buildItemPictureUrl(item);
                 items.add(new ItemResponse(item.getUuid(), item.getName(), item.getQuantity(), item.getUnitPrice(),
                         item.getCurrencyCode(), itemUrl));
             });
@@ -166,7 +160,7 @@ public class MobileServiceImpl implements MobileService {
             }
             Item saved = itemRepository.save(new Item(person, warehouse, addItemRequest.getName(), addItemRequest.getQuantity(),
                     addItemRequest.getUnitPrice(), addItemRequest.getCurrencyCode(), primToWrap(addItemRequest.getPicture().getBytes())));
-            String itemUrl = ServletUriComponentsBuilder.fromCurrentRequest().path("/" + saved.getName()).path("/picture").toUriString();
+            String itemUrl = buildItemPictureUrl(saved);
             return new ItemResponse(saved.getUuid(), saved.getName(), saved.getQuantity(), saved.getUnitPrice(),
                     saved.getCurrencyCode(), itemUrl);
         } catch (Exception e) {
@@ -180,7 +174,7 @@ public class MobileServiceImpl implements MobileService {
         try {
             Item item = itemRepository.findByUuid(uuid).orElseThrow(() ->
                     new Exception("Item Doesn't Exist!"));
-            String itemUrl = ServletUriComponentsBuilder.fromCurrentRequest().path("/picture").toUriString();
+            String itemUrl = buildItemPictureUrl(item);
             return new ItemResponse(item.getUuid(), item.getName(), item.getQuantity(), item.getUnitPrice(), item.getCurrencyCode(), itemUrl);
         } catch (Exception e) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
@@ -198,9 +192,6 @@ public class MobileServiceImpl implements MobileService {
             oldItem.setQuantity(updateItemRequest.getQuantity());
             oldItem.setUnitPrice(updateItemRequest.getUnitPrice());
             oldItem.setPicture((updateItemRequest.getPicture() != null)? primToWrap(updateItemRequest.getPicture().getBytes()) : new Byte[]{});
-            oldItem.setWarehouse(warehouseRepository.findByUuid(updateItemRequest.getWarehouseId()).orElseThrow(
-                    () -> new Exception("Warehouse doesn't exist!")
-            ));
             Item newItem = itemRepository.save(oldItem);
             String itemUrl = ServletUriComponentsBuilder.fromCurrentRequest().path("/picture").toUriString();
             return new ItemResponse(newItem.getUuid(), newItem.getName(), newItem.getQuantity(), newItem.getUnitPrice(),
@@ -227,8 +218,7 @@ public class MobileServiceImpl implements MobileService {
     public List<PersonResponse> getAllUsersAdmin(Principal principal) {
         List<PersonResponse> people = new ArrayList<>();
         personRepository.findAll().forEach(person -> {
-            String userUrl = ServletUriComponentsBuilder.fromCurrentContextPath().path("/mobile/users/")
-                    .path(person.getUsername()).path("/dp").toUriString();
+            String userUrl = buildUserDpUrl(person);
             people.add(new PersonResponse(person.getUsername(), person.getFirstName(), person.getLastName(), person.geteMail(), userUrl));
         });
         return people;
@@ -239,7 +229,7 @@ public class MobileServiceImpl implements MobileService {
         try {
             Person person = personRepository.findByUsername(username).orElseThrow(()->
                     new Exception("User doesn't exist!"));
-            String userUrl = ServletUriComponentsBuilder.fromCurrentContextPath().path("/picture").toUriString();
+            String userUrl = buildUserDpUrl(person);
             return new PersonResponse(person.getUsername(), person.getFirstName(), person.getLastName(), person.geteMail(), userUrl);
         } catch (Exception e) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
@@ -303,7 +293,8 @@ public class MobileServiceImpl implements MobileService {
         try {
             Person person = personRepository.findByUsername(username).orElseThrow(() ->
                     new Exception("User doesn't exist!"));
-            person.setDisplayPicture(primToWrap(dp.getBytes()));
+            Byte[] picture = (dp != null) ? primToWrap(dp.getBytes()) : null;
+            person.setDisplayPicture(picture);
             personRepository.save(person);
             return ResponseEntity.ok().build();
         } catch (Exception e) {
@@ -316,7 +307,8 @@ public class MobileServiceImpl implements MobileService {
         try {
             Item item = itemRepository.findByUuid(uuid).orElseThrow(() ->
                     new Exception("Item doesn't exist!"));
-            item.setPicture(primToWrap(picture.getBytes()));
+            Byte[] pic = (picture != null) ? primToWrap(picture.getBytes()) : null;
+            item.setPicture(pic);
             itemRepository.save(item);
             return ResponseEntity.ok().build();
         } catch (Exception e) {
@@ -329,12 +321,41 @@ public class MobileServiceImpl implements MobileService {
         try {
             Warehouse warehouse = warehouseRepository.findByName(warehouseName).orElseThrow(() ->
                     new Exception("Warehouse doesn't exist!"));
-            warehouse.setPicture(primToWrap(picture.getBytes()));
+            Byte[] pic = (picture != null) ? primToWrap(picture.getBytes()) : null;
+            warehouse.setPicture(pic);
             warehouseRepository.save(warehouse);
             return ResponseEntity.ok().build();
         } catch (Exception e) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
         }
+    }
+
+    private String buildUserDpUrl(Person person) {
+        return ServletUriComponentsBuilder
+                .fromCurrentContextPath()
+                .path("/users")
+                .path("/" + person.getUsername())
+                .path("/dp")
+                .toUriString();
+    }
+    private String buildItemPictureUrl(Item item) {
+        return ServletUriComponentsBuilder
+                .fromCurrentContextPath()
+                .path("/inventory")
+                .path("/warehouses")
+                .path("/" + item.getWarehouse().getName())
+                .path("/items")
+                .path("/" + item.getUuid())
+                .path("/picture")
+                .toUriString();
+    }
+    private String buildWarehousePictureUrl(Warehouse warehouse) {
+        return ServletUriComponentsBuilder.fromCurrentContextPath()
+                .path("/mobile")
+                .path("/inventory")
+                .path("/warehouses")
+                .path("/" + warehouse.getName())
+                .path("/picture").toUriString();
     }
 
     //TODO Find a way to do a more proper conversion

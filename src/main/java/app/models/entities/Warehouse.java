@@ -5,6 +5,7 @@ import org.hibernate.annotations.Type;
 
 import javax.persistence.*;
 import java.util.Collection;
+import java.util.UUID;
 
 @Entity
 public class Warehouse {
@@ -16,8 +17,9 @@ public class Warehouse {
     private Long id;
     private String name;
     private String address;
+    //TODO There must be a better way
     @Column(unique = true, columnDefinition = "char(36) default random_uuid()")
-    private String uuid;
+    private String uuid = UUID.randomUUID().toString();
     @Lob
     private Byte[] picture;
     @ManyToOne

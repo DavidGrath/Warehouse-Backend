@@ -5,6 +5,7 @@ import org.hibernate.annotations.Type;
 
 import javax.persistence.*;
 import java.util.Collection;
+import java.util.UUID;
 
 @Entity
 public class Person {
@@ -14,8 +15,9 @@ public class Person {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+    //TODO There must be a better way
     @Column(unique = true, columnDefinition = "char(36) default random_uuid()")
-    private String UUID;
+    private String UUID = java.util.UUID.randomUUID().toString();
     private String username;
     private String firstName;
     private String lastName;

@@ -1,3 +1,4 @@
+--Sorry for renaming this file, but I don't know how else to turn this off, I've tried in properties
 INSERT INTO `Role` (`name`) VALUES ('ROLE_USER'), ('ROLE_ADMIN');
 INSERT INTO `Privilege` (`name`) VALUES ('USE_WAREHOUSE'), ('MODIFY_WAREHOUSE');
 INSERT INTO `Person` (`username`, `first_name`, `last_name`, `e_mail`, `password`, `display_picture`)

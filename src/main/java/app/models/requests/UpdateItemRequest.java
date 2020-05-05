@@ -4,15 +4,13 @@ import org.springframework.web.multipart.MultipartFile;
 
 public class UpdateItemRequest {
     String name;
-    String warehouseId;
     Integer quantity;
     String currencyCode;
     Float unitPrice;
     MultipartFile picture;
 
-    public UpdateItemRequest(String name, String warehouseId, Integer quantity, String currencyCode, Float unitPrice, MultipartFile picture) {
+    public UpdateItemRequest(String name, Integer quantity, String currencyCode, Float unitPrice, MultipartFile picture) {
         this.name = name;
-        this.warehouseId = warehouseId;
         this.quantity = quantity;
         this.currencyCode = currencyCode;
         this.unitPrice = unitPrice;
@@ -25,14 +23,6 @@ public class UpdateItemRequest {
 
     public void setName(String name) {
         this.name = name;
-    }
-
-    public String getWarehouseId() {
-        return warehouseId;
-    }
-
-    public void setWarehouseId(String warehouseId) {
-        this.warehouseId = warehouseId;
     }
 
     public Integer getQuantity() {
